@@ -119,40 +119,32 @@ Clean Architecture organizes code into layers with clear boundaries and dependen
 ```mermaid
 graph TB
     subgraph "Presentation Layer (backend.Api)"
-        Controller[🎮 Controllers<br/>AccountController<br/>AuthController]
-        Middleware[⚙️ Middleware<br/>Authentication<br/>Authorization]
-        Startup[🚀 Startup<br/>DI Configuration<br/>Service Registration]
+        Controller[🎮 Controllers<br/>e.g. AccountController]
+        Config[⚙️ Configuration<br/>Startup, Middleware]
     end
 
     subgraph "Application Layer (backend.Core)"
-        Interface[📋 Interfaces<br/>IAccountCrud<br/>IEmailService]
-        DTO[📦 DTOs<br/>UserDto<br/>CreateUserDto]
-        Service[🔧 Services<br/>Business Logic<br/>Validation]
+        Interface[📋 Interfaces<br/>e.g. IAccountCrud]
+        DTO[📦 DTOs<br/>Data Transfer Objects]
+        Extensions[🔧 Extensions<br/>Shared Logic]
     end
 
     subgraph "Infrastructure Layer (backend.DataAccess)"
-        Repository[💾 Repositories<br/>AccountRepository<br/>AuthRepository]
-        DbContext[🗄️ DbContext<br/>EF Core<br/>AppDbContext]
-        DbModels[📊 Data Models<br/>AppUser<br/>AppRole]
+        Repository[💾 Repositories<br/>e.g. AccountRepository]
+        DbContext[🗄️ DbContext<br/>Entity Framework]
     end
 
-    subgraph "External Dependencies"
-        DB[(🗃️ PostgreSQL<br/>Database)]
-        Identity[🔐 ASP.NET Identity]
+    subgraph "External"
+        DB[(🗃️ Database)]
     end
 
     %% Request Flow
     Controller -->|uses| Interface
-    Controller -->|returns| DTO
+    Controller -->|transfers| DTO
     Repository -->|implements| Interface
     Repository -->|uses| DbContext
-    Repository -->|maps to| DTO
-    DbContext -->|manages| DbModels
-    DbContext -->|connects to| DB
-    Repository -->|uses| Identity
-    Startup -->|registers| Interface
-    Startup -->|registers| Repository
-    Startup -->|configures| DbContext
+    DbContext -->|queries| DB
+    Config -->|registers| Repository
 
     %% Styling
     classDef apiLayer fill:#4A90E2,stroke:#2E5C8A,stroke-width:2px,color:#fff
@@ -160,10 +152,10 @@ graph TB
     classDef dataLayer fill:#F39C12,stroke:#C87F0A,stroke-width:2px,color:#fff
     classDef external fill:#95A5A6,stroke:#616A6B,stroke-width:2px,color:#fff
 
-    class Controller,Middleware,Startup apiLayer
-    class Interface,DTO,Service coreLayer
-    class Repository,DbContext,DbModels dataLayer
-    class DB,Identity external
+    class Controller,Config apiLayer
+    class Interface,DTO,Extensions coreLayer
+    class Repository,DbContext dataLayer
+    class DB external
 ```
 
 ## Project Structure
@@ -174,9 +166,9 @@ cs_dotnet_boilerplate/
 ├── src/
 │   ├── backend.Api/                    # 🎮 Presentation Layer
 │   │   ├── Accounts/
-│   │   │   └── AccountController.cs    # HTTP endpoints for account operations
+│   │   │   └── *Controller.cs          # Controllers (e.g. AccountController)
 │   │   ├── Auth/
-│   │   │   └── AuthController.cs       # HTTP endpoints for authentication
+│   │   │   └── *Controller.cs          # Controllers (e.g. AuthController)
 │   │   ├── Configuration/
 │   │   │   ├── Startup.cs              # Service registration & middleware
 │   │   │   └── Configuration.cs        # App configuration
@@ -185,25 +177,26 @@ cs_dotnet_boilerplate/
 │   │
 │   ├── backend.Core/                   # 🧠 Application/Domain Layer
 │   │   ├── Accounts/
-│   │   │   ├── IAccountCrud.cs         # Interface for account operations
-│   │   │   ├── UserDto.cs              # User data transfer object
-│   │   │   └── CreateUserDto.cs        # DTO for creating users
+│   │   │   ├── I*Crud.cs               # Interfaces (e.g. IAccountCrud)
+│   │   │   └── *Dto.cs                 # DTOs (e.g. UserDto, CreateUserDto)
 │   │   ├── Auth/
-│   │   │   ├── LoginDto.cs             # DTO for login
-│   │   │   └── RegisterDto.cs          # DTO for registration
+│   │   │   └── *Dto.cs                 # DTOs (e.g. LoginDto, RegisterDto)
 │   │   ├── Emails/
-│   │   │   ├── IEmailService.cs        # Email service interface
-│   │   │   └── EmailService.cs         # Email business logic
+│   │   │   ├── IEmailService.cs        # Service interfaces
+│   │   │   ├── EmailService.cs         # Service implementations
+│   │   │   └── EmailTemplate.cs        # Email templates
 │   │   ├── Extensions/
 │   │   │   ├── PageRequest.cs          # Pagination request
 │   │   │   ├── PageResult.cs           # Pagination result
+│   │   │   ├── IPageable.cs            # Pagination interface
 │   │   │   └── QueryableExtensions.cs  # LINQ extensions
 │   │   └── Roles/
-│   │       └── Role.cs                 # Role constants
+│   │       ├── Role.cs                 # Role constants
+│   │       └── RoleDto.cs              # Role DTO
 │   │
 │   └── backend.DataAccess/             # 💾 Infrastructure Layer
 │       ├── Accounts/
-│       │   ├── AccountRepository.cs    # Implements IAccountCrud
+│       │   ├── *Repository.cs          # Repositories (e.g. AccountRepository)
 │       │   ├── AppUser.cs              # Database entity for users
 │       │   └── AppRole.cs              # Database entity for roles
 │       ├── Database/
@@ -216,6 +209,8 @@ cs_dotnet_boilerplate/
 ├── Dockerfile                          # Docker configuration
 └── README.md                           # This file
 ```
+
+> **Note:** A `backend.Tests` project for unit and integration tests can be added following the same Clean Architecture principles. Tests would typically mirror the structure of the projects they test and use mocking frameworks to test each layer independently.
 
 ## How Components Work Together
 
